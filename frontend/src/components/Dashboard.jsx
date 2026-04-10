@@ -32,7 +32,6 @@ function Dashboard({ config, reload }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ layout })
     })
-    reload()
   }
 
   const handleDragStart = (e, stream, idx) => {

@@ -245,6 +245,8 @@ def get_stream_url(stream):
 def generate_go2rtc_config(streams):
     logger.info("Generating go2rtc.yaml configuration...")
     lines = [
+        "api:",
+        "  origin: '*'",
         "webrtc:",
         "  listen: \":8555\"",
         "  candidates:",
@@ -916,13 +918,31 @@ def recordings_timeline(camera):
     return jsonify(segments), 200
 
 
+# Proxy go2rtc static assets through Flask (same origin) to avoid CORS blocks
+@app.route('/go2rtc-proxy/<path:asset_path>')
+def go2rtc_asset_proxy(asset_path):
+    go2rtc_host = os.environ.get("GO2RTC_HOST", "go2rtc")
+    try:
+        qs = request.query_string.decode('utf-8')
+        url = f"http://{go2rtc_host}:1984/{asset_path}"
+        if qs:
+            url += '?' + qs
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            content = resp.read()
+            content_type = resp.headers.get('Content-Type', 'application/octet-stream')
+        return Response(content, content_type=content_type)
+    except Exception as e:
+        logger.error(f"go2rtc asset proxy error: {e}")
+        return f"Proxy error: {e}", 502
+
 # Muted player proxy
 @app.route('/player')
 def muted_player():
     src = request.args.get('src', '')
     go2rtc_host = os.environ.get("GO2RTC_HOST", "go2rtc")
     try:
-        url = f"http://{go2rtc_host}:1984/stream.html?src={src}&mode=webrtc,mse,mp4,mjpeg"
+        url = f"http://{go2rtc_host}:1984/stream.html?src={src}&mode=webrtc"
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=5) as resp:
             html = resp.read().decode('utf-8')
@@ -936,13 +956,14 @@ setInterval(forceMute, 500);
 new MutationObserver(forceMute).observe(document.body, {childList: true, subtree: true});
 </script>
 """
+        # Scripts load via same-origin Flask proxy (avoids CORS).
+        # WebSocket URL is built with new URL('api/ws?...', location.href) in go2rtc's JS,
+        # so replace location.href with the public go2rtc URL — WebSocket ignores CORS.
+        public_host = request.host.split(':')[0]
+        go2rtc_public = f"http://{public_host}:1984"
+        html = html.replace('<head>', '<head>\n    <base href="/go2rtc-proxy/">', 1)
+        html = html.replace('location.href', f'"{go2rtc_public}/"')
         html = html.replace('</body>', mute_script + '</body>')
-        # Rewrite relative asset URLs so they resolve to go2rtc, not Flask
-        go2rtc_base = f"http://{go2rtc_host}:1984"
-        html = html.replace('src="/', f'src="{go2rtc_base}/')
-        html = html.replace("src='/", f"src='{go2rtc_base}/")
-        html = html.replace('href="/', f'href="{go2rtc_base}/')
-        html = html.replace("href='/", f"href='{go2rtc_base}/")
         return Response(html, content_type='text/html')
     except Exception as e:
         logger.error(f"Player proxy error: {e}")
