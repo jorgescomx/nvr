@@ -70,7 +70,8 @@ function App() {
       </div>
 
       <div className="main-content">
-        <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
+        {/* Dashboard uses visibility so iframes stay alive when switching tabs */}
+        <div style={{ visibility: activeTab === 'dashboard' ? 'visible' : 'hidden', position: activeTab === 'dashboard' ? 'relative' : 'absolute', top: 0, left: 0, right: 0 }}>
           <Dashboard config={config} reload={loadConfig} />
         </div>
         <div style={{ display: activeTab === 'cameras' ? 'block' : 'none' }}>

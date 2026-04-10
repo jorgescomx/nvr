@@ -183,7 +183,7 @@ function Dashboard({ config, reload }) {
               <div className="camera-feed">
                 <iframe
                   className="webrtc-iframe"
-                  src={`http://${window.location.hostname}:1984/stream.html?src=${stream.name}&mode=webrtc,mse,mp4,mjpeg`}
+                  src={`/player?src=${stream.name}`}
                   allow="autoplay; fullscreen"
                 />
               </div>

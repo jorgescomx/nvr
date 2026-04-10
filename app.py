@@ -61,7 +61,7 @@ def is_rate_limited(ip):
 
 # Input validation
 _SAFE_IP_RE = re.compile(r'^[\w.\-]+$')
-_SAFE_PATH_RE = re.compile(r'^[/\w.\-]+$')
+_SAFE_PATH_RE = re.compile(r'^[/\w.\-?=&]+$')
 
 def validate_stream_input(ip, path):
     if not ip or not _SAFE_IP_RE.match(ip) or len(ip) > 255:
@@ -616,7 +616,7 @@ def add_stream():
         "username": username,
         "path": path,
         "timezone": timezone,
-        "is_recording": True,
+        "is_recording": False,
         "grid_size": 1
     }
     if password:
@@ -937,6 +937,12 @@ new MutationObserver(forceMute).observe(document.body, {childList: true, subtree
 </script>
 """
         html = html.replace('</body>', mute_script + '</body>')
+        # Rewrite relative asset URLs so they resolve to go2rtc, not Flask
+        go2rtc_base = f"http://{go2rtc_host}:1984"
+        html = html.replace('src="/', f'src="{go2rtc_base}/')
+        html = html.replace("src='/", f"src='{go2rtc_base}/")
+        html = html.replace('href="/', f'href="{go2rtc_base}/')
+        html = html.replace("href='/", f"href='{go2rtc_base}/")
         return Response(html, content_type='text/html')
     except Exception as e:
         logger.error(f"Player proxy error: {e}")
