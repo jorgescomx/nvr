@@ -1,3 +1,5 @@
+import CameraFeed from './CameraFeed'
+
 function Dashboard({ config, reload }) {
   if (!config || !config.streams || config.streams.length === 0) {
     return (
@@ -180,11 +182,7 @@ function Dashboard({ config, reload }) {
                 </div>
               </div>
               <div className="camera-feed">
-                <iframe
-                  className="webrtc-iframe"
-                  src={`/player?src=${stream.name}`}
-                  allow="autoplay; fullscreen"
-                />
+                <CameraFeed streamName={stream.name} />
               </div>
               <div
                 className="resize-handle"

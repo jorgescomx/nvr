@@ -918,7 +918,7 @@ def recordings_timeline(camera):
     return jsonify(segments), 200
 
 
-# Proxy go2rtc static assets through Flask (same origin) to avoid CORS blocks
+# Proxy go2rtc resources through Flask (same origin) — used for HLS playlist and segments
 @app.route('/go2rtc-proxy/<path:asset_path>')
 def go2rtc_asset_proxy(asset_path):
     go2rtc_host = os.environ.get("GO2RTC_HOST", "go2rtc")
@@ -928,12 +928,12 @@ def go2rtc_asset_proxy(asset_path):
         if qs:
             url += '?' + qs
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             content = resp.read()
             content_type = resp.headers.get('Content-Type', 'application/octet-stream')
         return Response(content, content_type=content_type)
     except Exception as e:
-        logger.error(f"go2rtc asset proxy error: {e}")
+        logger.error(f"go2rtc proxy error: {e}")
         return f"Proxy error: {e}", 502
 
 # Muted player proxy
@@ -948,12 +948,30 @@ def muted_player():
             html = resp.read().decode('utf-8')
         mute_script = """
 <script>
-function forceMute() {
-    document.querySelectorAll('video').forEach(v => { v.muted = true; v.volume = 0; });
+function setupVideo(v) {
+    v.muted = true;
+    v.volume = 0;
+    var reconnectTimer = null;
+    function scheduleReconnect() {
+        if (reconnectTimer) return;
+        reconnectTimer = setTimeout(function() { location.reload(); }, 3000);
+    }
+    v.addEventListener('error', scheduleReconnect);
+    v.addEventListener('stalled', scheduleReconnect);
+    // If video stops producing frames for 10 seconds, reload
+    var lastTime = -1;
+    var stallCheck = setInterval(function() {
+        if (v.readyState >= 2 && !v.paused && !v.ended) {
+            if (v.currentTime === lastTime) { scheduleReconnect(); }
+            else { lastTime = v.currentTime; if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; } }
+        }
+    }, 10000);
 }
-forceMute();
-setInterval(forceMute, 500);
-new MutationObserver(forceMute).observe(document.body, {childList: true, subtree: true});
+function initAll() {
+    document.querySelectorAll('video').forEach(setupVideo);
+}
+initAll();
+new MutationObserver(initAll).observe(document.body, {childList: true, subtree: true});
 </script>
 """
         # Scripts load via same-origin Flask proxy (avoids CORS).

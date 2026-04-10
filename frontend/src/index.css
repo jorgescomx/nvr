@@ -259,13 +259,10 @@ body {
 }
 
 .camera-feed {
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  flex: 1;
+  min-height: 0;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
+  overflow: hidden;
 }
 
 /* Settings & Lists */
