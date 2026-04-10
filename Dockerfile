@@ -17,7 +17,7 @@ COPY . .
 # Build the frontend (if we copy it into the container)
 # Actually, the frontend will be built in the container runtime 
 # or via multi-stage to serve statically via Flask
-RUN cd frontend && npm install && npm run build || true
+RUN cd frontend && npm install && npm run build
 
 ENV PYTHONUNBUFFERED=1
 
