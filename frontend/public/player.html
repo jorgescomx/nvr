@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline muted></video>
+    <script type="module">
+        // Small helper to connect to go2rtc
+        const urlParams = new URLSearchParams(window.location.search);
+        const src = urlParams.get('src');
+        const host = window.location.hostname;
+        
+        // We use the same logic as go2rtc stream.html but force muted
+        import('http://' + host + ':1984/static/video-rtc.js').then(module => {
+            const VideoRTC = module.default;
+            const video = document.getElementById('video');
+            video.src = 'http://' + host + ':1984/api/ws?src=' + src;
+            
+            // Ensure muted is forced at the browser level
+            video.muted = true;
+            video.onloadedmetadata = () => {
+                video.muted = true;
+                video.play().catch(e => console.log("Autoplay prevented:", e));
+            };
+        }).catch(err => {
+            console.error("Failed to load video-rtc.js:", err);
+        });
+    </script>
+</body>
+</html>

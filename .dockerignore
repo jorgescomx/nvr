@@ -1,0 +1,7 @@
+frontend/node_modules
+recordings
+config
+__pycache__
+*.pyc
+.git
+.env
