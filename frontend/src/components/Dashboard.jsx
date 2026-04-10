@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import CameraFeed from './CameraFeed'
 
-function Dashboard({ config, reload }) {
+function Dashboard({ config }) {
+  const [localLayouts, setLocalLayouts] = useState({})
+
   if (!config || !config.streams || config.streams.length === 0) {
     return (
       <div>
@@ -13,6 +16,7 @@ function Dashboard({ config, reload }) {
   }
 
   const getLayout = (stream, idx) => {
+    if (localLayouts[stream.name]) return localLayouts[stream.name]
     if (stream.layout) return stream.layout
     const count = Math.max(1, config.streams.length)
     const cols = Math.ceil(Math.sqrt(count))
@@ -29,6 +33,7 @@ function Dashboard({ config, reload }) {
   }
 
   const saveLayout = async (streamName, layout) => {
+    setLocalLayouts(prev => ({ ...prev, [streamName]: layout }))
     await fetch(`/api/streams/${streamName}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -137,11 +142,11 @@ function Dashboard({ config, reload }) {
       iframes.forEach(f => { f.style.pointerEvents = '' })
       const finalW = (card.offsetWidth / containerRect.width) * 100
       const finalH = (card.offsetHeight / containerRect.height) * 100
-      const layout = getLayout(stream, idx)
       card.style.width = ''
       card.style.height = ''
       card.style.outline = ''
       card.style.transition = ''
+      const layout = getLayout(stream, idx)
       await saveLayout(stream.name, { ...layout, w: finalW, h: finalH })
     }
   }
