@@ -1,0 +1,36 @@
+services:
+  nvr:
+    image: jorgesco/nvr:latest
+    container_name: eqnvr
+    environment:
+      # Required: generate a strong random secret key, e.g.:
+      #   python3 -c "import secrets; print(secrets.token_hex(32))"
+      - REC_SECRET_KEY=change_me_to_a_strong_random_secret
+
+      # Timezone for file timestamps (e.g. America/New_York, Europe/London, UTC)
+      - TZ=UTC
+
+      # Optional: path to encryption key file for RTSP password encryption at rest
+      # - ENCRYPTION_KEY_PATH=/config/encryption.key
+
+      # Optional: path to SQLite database (default: /config/nvr.db)
+      # - DB_PATH=/config/nvr.db
+
+    volumes:
+      # Config and database (credentials, layouts, settings)
+      - ./config:/config
+      # Recordings storage — point this to wherever you have disk space
+      - ./recordings:/recordings
+
+    ports:
+      # Web UI
+      - "5000:5000"
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
