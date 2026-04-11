@@ -3,8 +3,6 @@ services:
     build: .
     container_name: lightweight-nvr
     environment:
-      - CONFIG_PATH=/config/config.json
-      - GO2RTC_CONFIG_PATH=/config/go2rtc.yaml
       - ENCRYPTION_KEY_PATH=/config/encryption.key
       - DB_PATH=/config/nvr.db
       - REC_SECRET_KEY=b945a39d27eed86b2e16c4edf6c4f114a0892babdd1203fbecc37a5eb5e5be59
@@ -22,16 +20,3 @@ services:
       retries: 3
       start_period: 20s
 
-  go2rtc:
-    image: alexxit/go2rtc:latest
-    container_name: lightweight-go2rtc
-    environment:
-      - TZ=America/New_York
-    volumes:
-      - ./config:/config
-    ports:
-      - "1984:1984"
-      - "8554:8554"
-      - "8555:8555"
-      - "8555:8555/udp"
-    restart: unless-stopped
